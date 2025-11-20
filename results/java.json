@@ -1,7 +1,7 @@
 {
   "language": "Java",
-  "threads": 4,
-  "max_number": 50000,
-  "primes_found": 5133,
-  "time_seconds": 0.009615
+  "threads": 2,
+  "max_number": 20000,
+  "primes_found": 2262,
+  "time_seconds": 0.006185
 }

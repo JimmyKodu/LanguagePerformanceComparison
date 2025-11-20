@@ -82,6 +82,15 @@ Run with custom thread count and range:
 ./run_benchmarks.sh 8 200000
 ```
 
+### Validating Implementations
+
+To verify all benchmark implementations are working correctly:
+```bash
+./validate_benchmarks.py
+```
+
+This will run each language's benchmark with a small dataset and verify they all produce the correct prime count.
+
 ### Analyzing Results
 
 After running benchmarks, analyze and compare the results:
