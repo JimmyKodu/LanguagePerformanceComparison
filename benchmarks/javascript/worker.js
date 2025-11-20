@@ -11,16 +11,28 @@ function isPrime(n) {
     return true;
 }
 
-function countPrimesInRange(start, end) {
+function countPrimesForDuration(duration) {
     let count = 0;
-    for (let num = start; num < end; num++) {
+    let num = 2;
+    const startTime = Date.now();
+    
+    while (true) {
         if (isPrime(num)) {
             count++;
         }
+        num++;
+        
+        // Check time periodically (every 1000 numbers to reduce overhead)
+        if (num % 1000 === 0) {
+            if ((Date.now() - startTime) / 1000 >= duration) {
+                break;
+            }
+        }
     }
+    
     return count;
 }
 
-const { start, end } = workerData;
-const count = countPrimesInRange(start, end);
+const { duration } = workerData;
+const count = countPrimesForDuration(duration);
 parentPort.postMessage(count);

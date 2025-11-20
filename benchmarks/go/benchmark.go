@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,79 +31,80 @@ func isPrime(n int) bool {
 	return true
 }
 
-// countPrimesInRange counts prime numbers in a given range
-func countPrimesInRange(start, end int, wg *sync.WaitGroup, results chan int) {
+// countPrimesForDuration counts prime numbers for a given duration
+func countPrimesForDuration(duration time.Duration, wg *sync.WaitGroup, result *int64) {
 	defer wg.Done()
-	count := 0
-	for num := start; num < end; num++ {
+	count := int64(0)
+	num := 2
+	startTime := time.Now()
+
+	for {
 		if isPrime(num) {
 			count++
 		}
+		num++
+
+		// Check time periodically (every 1000 numbers to reduce overhead)
+		if num%1000 == 0 {
+			if time.Since(startTime) >= duration {
+				break
+			}
+		}
 	}
-	results <- count
+
+	atomic.AddInt64(result, count)
 }
 
 // BenchmarkResult represents the benchmark output
 type BenchmarkResult struct {
-	Language    string  `json:"language"`
-	Threads     int     `json:"threads"`
-	MaxNumber   int     `json:"max_number"`
-	PrimesFound int     `json:"primes_found"`
-	TimeSeconds float64 `json:"time_seconds"`
+	Language         string  `json:"language"`
+	Threads          int     `json:"threads"`
+	DurationSeconds  float64 `json:"duration_seconds"`
+	ActualTimeSeconds float64 `json:"actual_time_seconds"`
+	PrimesFound      int64   `json:"primes_found"`
+	PrimesPerSecond  int64   `json:"primes_per_second"`
 }
 
-func benchmark(numThreads, maxNumber int) BenchmarkResult {
+func benchmark(numThreads int, duration float64) BenchmarkResult {
 	startTime := time.Now()
+	durationTime := time.Duration(duration * float64(time.Second))
 
-	// Divide work among goroutines
-	chunkSize := maxNumber / numThreads
-	results := make(chan int, numThreads)
+	var totalPrimes int64
 	var wg sync.WaitGroup
 
 	for i := 0; i < numThreads; i++ {
-		start := i * chunkSize
-		end := (i + 1) * chunkSize
-		if i == numThreads-1 {
-			end = maxNumber
-		}
-
 		wg.Add(1)
-		go countPrimesInRange(start, end, &wg, results)
+		go countPrimesForDuration(durationTime, &wg, &totalPrimes)
 	}
 
 	// Wait for all goroutines to complete
 	wg.Wait()
-	close(results)
 
-	// Sum up results
-	totalPrimes := 0
-	for count := range results {
-		totalPrimes += count
-	}
-
-	elapsed := time.Since(startTime).Seconds()
+	actualTime := time.Since(startTime).Seconds()
+	primesPerSecond := int64(float64(totalPrimes) / actualTime)
 
 	return BenchmarkResult{
-		Language:    "Go",
-		Threads:     numThreads,
-		MaxNumber:   maxNumber,
-		PrimesFound: totalPrimes,
-		TimeSeconds: elapsed,
+		Language:         "Go",
+		Threads:          numThreads,
+		DurationSeconds:  duration,
+		ActualTimeSeconds: actualTime,
+		PrimesFound:      totalPrimes,
+		PrimesPerSecond:  primesPerSecond,
 	}
 }
 
 func main() {
 	numThreads := 4
-	maxNumber := 100000
+	duration := 1.0
 
 	if len(os.Args) > 1 {
 		numThreads, _ = strconv.Atoi(os.Args[1])
 	}
 	if len(os.Args) > 2 {
-		maxNumber, _ = strconv.Atoi(os.Args[2])
+		duration, _ = strconv.ParseFloat(os.Args[2], 64)
 	}
 
-	result := benchmark(numThreads, maxNumber)
+	result := benchmark(numThreads, duration)
 	jsonOutput, _ := json.MarshalIndent(result, "", "  ")
 	fmt.Println(string(jsonOutput))
 }

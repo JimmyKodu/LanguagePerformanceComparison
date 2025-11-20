@@ -3,8 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <chrono>
-#include <string>
-#include <sstream>
+#include <atomic>
 
 bool is_prime(int n) {
     if (n < 2) return false;
@@ -17,50 +16,60 @@ bool is_prime(int n) {
     return true;
 }
 
-void count_primes_in_range(int start, int end, int& result) {
-    int count = 0;
-    for (int num = start; num < end; num++) {
+void count_primes_for_duration(double duration, std::atomic<long>& total_count) {
+    long count = 0;
+    int num = 2;
+    auto start_time = std::chrono::high_resolution_clock::now();
+    
+    while (true) {
         if (is_prime(num)) {
             count++;
         }
+        num++;
+        
+        // Check time periodically (every 1000 numbers to reduce overhead)
+        if (num % 1000 == 0) {
+            auto current_time = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = current_time - start_time;
+            if (elapsed.count() >= duration) {
+                break;
+            }
+        }
     }
-    result = count;
+    
+    total_count += count;
 }
 
 int main(int argc, char* argv[]) {
     int num_threads = argc > 1 ? std::stoi(argv[1]) : 4;
-    int max_number = argc > 2 ? std::stoi(argv[2]) : 100000;
+    double duration = argc > 2 ? std::stod(argv[2]) : 1.0;
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
     std::vector<std::thread> threads;
-    std::vector<int> results(num_threads, 0);
-    int chunk_size = max_number / num_threads;
+    std::atomic<long> total_primes(0);
 
     for (int i = 0; i < num_threads; i++) {
-        int start = i * chunk_size;
-        int end = (i == num_threads - 1) ? max_number : (i + 1) * chunk_size;
-        threads.emplace_back(count_primes_in_range, start, end, std::ref(results[i]));
+        threads.emplace_back(count_primes_for_duration, duration, std::ref(total_primes));
     }
 
     for (auto& thread : threads) {
         thread.join();
     }
 
-    int total_primes = 0;
-    for (int count : results) {
-        total_primes += count;
-    }
-
     auto end_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end_time - start_time;
+    std::chrono::duration<double> actual_time = end_time - start_time;
+
+    long primes = total_primes.load();
+    long primes_per_sec = static_cast<long>(primes / actual_time.count());
 
     std::cout << "{\n";
     std::cout << "  \"language\": \"C++\",\n";
     std::cout << "  \"threads\": " << num_threads << ",\n";
-    std::cout << "  \"max_number\": " << max_number << ",\n";
-    std::cout << "  \"primes_found\": " << total_primes << ",\n";
-    std::cout << "  \"time_seconds\": " << elapsed.count() << "\n";
+    std::cout << "  \"duration_seconds\": " << duration << ",\n";
+    std::cout << "  \"actual_time_seconds\": " << actual_time.count() << ",\n";
+    std::cout << "  \"primes_found\": " << primes << ",\n";
+    std::cout << "  \"primes_per_second\": " << primes_per_sec << "\n";
     std::cout << "}\n";
 
     return 0;

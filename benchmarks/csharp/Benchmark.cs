@@ -2,14 +2,16 @@ using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Threading;
 
 class BenchmarkResult
 {
     public string language { get; set; }
     public int threads { get; set; }
-    public int max_number { get; set; }
-    public int primes_found { get; set; }
-    public double time_seconds { get; set; }
+    public double duration_seconds { get; set; }
+    public double actual_time_seconds { get; set; }
+    public long primes_found { get; set; }
+    public long primes_per_second { get; set; }
 }
 
 class Program
@@ -27,61 +29,73 @@ class Program
         return true;
     }
 
-    static int CountPrimesInRange(int start, int end)
+    static long CountPrimesForDuration(double duration)
     {
-        int count = 0;
-        for (int num = start; num < end; num++)
+        long count = 0;
+        int num = 2;
+        var stopwatch = Stopwatch.StartNew();
+
+        while (true)
         {
             if (IsPrime(num))
             {
                 count++;
             }
+            num++;
+
+            // Check time periodically (every 1000 numbers to reduce overhead)
+            if (num % 1000 == 0)
+            {
+                if (stopwatch.Elapsed.TotalSeconds >= duration)
+                {
+                    break;
+                }
+            }
         }
+
         return count;
     }
 
-    static BenchmarkResult RunBenchmark(int numThreads, int maxNumber)
+    static BenchmarkResult RunBenchmark(int numThreads, double duration)
     {
         var stopwatch = Stopwatch.StartNew();
 
-        int chunkSize = maxNumber / numThreads;
-        Task<int>[] tasks = new Task<int>[numThreads];
+        Task<long>[] tasks = new Task<long>[numThreads];
 
         for (int i = 0; i < numThreads; i++)
         {
-            int start = i * chunkSize;
-            int end = (i == numThreads - 1) ? maxNumber : (i + 1) * chunkSize;
-            int threadIndex = i;
-            tasks[i] = Task.Run(() => CountPrimesInRange(start, end));
+            tasks[i] = Task.Run(() => CountPrimesForDuration(duration));
         }
 
         Task.WaitAll(tasks);
 
-        int totalPrimes = 0;
+        long totalPrimes = 0;
         foreach (var task in tasks)
         {
             totalPrimes += task.Result;
         }
 
         stopwatch.Stop();
-        double elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+        double actualSeconds = stopwatch.Elapsed.TotalSeconds;
+        long primesPerSecond = (long)(totalPrimes / actualSeconds);
 
         return new BenchmarkResult
         {
             language = "C#",
             threads = numThreads,
-            max_number = maxNumber,
+            duration_seconds = duration,
+            actual_time_seconds = actualSeconds,
             primes_found = totalPrimes,
-            time_seconds = elapsedSeconds
+            primes_per_second = primesPerSecond
         };
     }
 
     static void Main(string[] args)
     {
         int numThreads = args.Length > 0 ? int.Parse(args[0]) : 4;
-        int maxNumber = args.Length > 1 ? int.Parse(args[1]) : 100000;
+        double duration = args.Length > 1 ? double.Parse(args[1]) : 1.0;
 
-        var result = RunBenchmark(numThreads, maxNumber);
+        var result = RunBenchmark(numThreads, duration);
         var options = new JsonSerializerOptions { WriteIndented = true };
         string jsonString = JsonSerializer.Serialize(result, options);
         Console.WriteLine(jsonString);

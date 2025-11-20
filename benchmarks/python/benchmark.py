@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Python multithreading benchmark
-Calculates prime numbers using multiple threads
+Calculates prime numbers using multiple threads for a fixed duration
 """
 import time
 import threading
@@ -21,27 +21,34 @@ def is_prime(n):
             return False
     return True
 
-def count_primes_in_range(start, end, results, index):
-    """Count prime numbers in a given range"""
+def count_primes_for_duration(duration, results, index, stop_flag):
+    """Count prime numbers for a given duration"""
     count = 0
-    for num in range(start, end):
-        if is_prime(num):
-            count += 1
-    results[index] = count
-
-def benchmark(num_threads=4, max_number=100000):
-    """Run the benchmark with specified number of threads"""
+    num = 2
     start_time = time.time()
     
-    # Divide work among threads
-    chunk_size = max_number // num_threads
+    while not stop_flag[0]:
+        if is_prime(num):
+            count += 1
+        num += 1
+        
+        # Check time periodically (every 1000 numbers to reduce overhead)
+        if num % 1000 == 0:
+            if time.time() - start_time >= duration:
+                break
+    
+    results[index] = count
+
+def benchmark(num_threads=4, duration=1.0):
+    """Run the benchmark with specified number of threads for a fixed duration"""
+    start_time = time.time()
+    
     threads = []
     results = [0] * num_threads
+    stop_flag = [False]
     
     for i in range(num_threads):
-        start = i * chunk_size
-        end = (i + 1) * chunk_size if i < num_threads - 1 else max_number
-        thread = threading.Thread(target=count_primes_in_range, args=(start, end, results, i))
+        thread = threading.Thread(target=count_primes_for_duration, args=(duration, results, i, stop_flag))
         threads.append(thread)
         thread.start()
     
@@ -51,19 +58,20 @@ def benchmark(num_threads=4, max_number=100000):
     
     total_primes = sum(results)
     end_time = time.time()
-    elapsed_time = end_time - start_time
+    actual_time = end_time - start_time
     
     return {
         "language": "Python",
         "threads": num_threads,
-        "max_number": max_number,
+        "duration_seconds": duration,
+        "actual_time_seconds": actual_time,
         "primes_found": total_primes,
-        "time_seconds": elapsed_time
+        "primes_per_second": int(total_primes / actual_time)
     }
 
 if __name__ == "__main__":
     num_threads = int(sys.argv[1]) if len(sys.argv) > 1 else 4
-    max_number = int(sys.argv[2]) if len(sys.argv) > 2 else 100000
+    duration = float(sys.argv[2]) if len(sys.argv) > 2 else 1.0
     
-    result = benchmark(num_threads, max_number)
+    result = benchmark(num_threads, duration)
     print(json.dumps(result, indent=2))

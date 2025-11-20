@@ -32,42 +32,42 @@ def print_comparison_table(results):
         print("No results to compare")
         return
     
-    # Sort by time (fastest first)
-    sorted_results = sorted(results, key=lambda x: x.get('time_seconds', float('inf')))
+    # Sort by primes_per_second (fastest first)
+    sorted_results = sorted(results, key=lambda x: x.get('primes_per_second', 0), reverse=True)
     
-    print("\n" + "="*80)
+    print("\n" + "="*100)
     print("BENCHMARK RESULTS COMPARISON")
-    print("="*80)
+    print("="*100)
     print(f"\nTest Configuration:")
     if sorted_results:
-        print(f"  Max Number: {sorted_results[0].get('max_number', 'N/A')}")
+        print(f"  Duration: {sorted_results[0].get('duration_seconds', 'N/A')}s")
     print()
     
     # Header
-    print(f"{'Language':<15} {'Threads':<10} {'Primes Found':<15} {'Time (s)':<12} {'Speed'}")
-    print("-"*80)
+    print(f"{'Language':<15} {'Threads':<10} {'Primes Found':<15} {'Primes/sec':<15} {'Performance'}")
+    print("-"*100)
     
-    # Get fastest time for relative speed calculation
-    fastest_time = sorted_results[0].get('time_seconds', 1)
+    # Get fastest primes/sec for relative performance calculation
+    fastest_rate = sorted_results[0].get('primes_per_second', 1)
     
     # Print each result
     for i, result in enumerate(sorted_results, 1):
         language = result.get('language', 'Unknown')
         threads = result.get('threads', 'N/A')
         primes = result.get('primes_found', 'N/A')
-        time_sec = result.get('time_seconds', 'N/A')
+        primes_per_sec = result.get('primes_per_second', 'N/A')
         
-        # Calculate relative speed
-        if isinstance(time_sec, (int, float)) and time_sec > 0:
-            relative_speed = f"{fastest_time/time_sec:.2f}x"
+        # Calculate relative performance
+        if isinstance(primes_per_sec, (int, float)) and primes_per_sec > 0:
+            relative_perf = f"{primes_per_sec/fastest_rate:.2f}x"
             if i == 1:
-                relative_speed = "1.00x (fastest)"
+                relative_perf = "1.00x (fastest)"
         else:
-            relative_speed = "N/A"
+            relative_perf = "N/A"
         
-        print(f"{language:<15} {str(threads):<10} {str(primes):<15} {time_sec:<12.6f} {relative_speed}")
+        print(f"{language:<15} {str(threads):<10} {str(primes):<15} {str(primes_per_sec):<15} {relative_perf}")
     
-    print("-"*80)
+    print("-"*100)
     print()
 
 def print_statistics(results):
@@ -75,26 +75,26 @@ def print_statistics(results):
     if not results:
         return
     
-    times = [r.get('time_seconds') for r in results if 'time_seconds' in r]
+    rates = [r.get('primes_per_second') for r in results if 'primes_per_second' in r]
     
-    if not times:
+    if not rates:
         return
     
-    print("\n" + "="*80)
+    print("\n" + "="*100)
     print("STATISTICAL ANALYSIS")
-    print("="*80)
+    print("="*100)
     print(f"Total languages tested: {len(results)}")
-    print(f"Fastest time: {min(times):.6f} seconds")
-    print(f"Slowest time: {max(times):.6f} seconds")
-    print(f"Average time: {sum(times)/len(times):.6f} seconds")
-    print(f"Speed difference (slowest/fastest): {max(times)/min(times):.2f}x")
+    print(f"Fastest throughput: {max(rates):,} primes/second")
+    print(f"Slowest throughput: {min(rates):,} primes/second")
+    print(f"Average throughput: {int(sum(rates)/len(rates)):,} primes/second")
+    print(f"Performance difference (fastest/slowest): {max(rates)/min(rates):.2f}x")
     print()
 
 def print_multithreading_analysis(results):
     """Analyze multithreading effectiveness"""
-    print("\n" + "="*80)
+    print("\n" + "="*100)
     print("MULTITHREADING ANALYSIS")
-    print("="*80)
+    print("="*100)
     
     for result in sorted(results, key=lambda x: x.get('language', '')):
         language = result.get('language', 'Unknown')
@@ -129,9 +129,9 @@ def main():
     print_statistics(results)
     print_multithreading_analysis(results)
     
-    print("="*80)
+    print("="*100)
     print("Analysis complete!")
-    print("="*80)
+    print("="*100)
     print()
 
 if __name__ == "__main__":

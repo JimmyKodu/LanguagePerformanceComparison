@@ -14,48 +14,55 @@ def is_prime(n)
   true
 end
 
-def count_primes_in_range(start, finish)
+def count_primes_for_duration(duration)
   count = 0
-  (start...finish).each do |num|
+  num = 2
+  start_time = Time.now
+  
+  loop do
     count += 1 if is_prime(num)
+    num += 1
+    
+    # Check time periodically (every 1000 numbers to reduce overhead)
+    if num % 1000 == 0
+      break if Time.now - start_time >= duration
+    end
   end
+  
   count
 end
 
-def benchmark(num_threads = 4, max_number = 100000)
+def benchmark(num_threads = 4, duration = 1.0)
   start_time = Time.now
   
-  chunk_size = max_number / num_threads
   threads = []
   results = Array.new(num_threads, 0)
   
   num_threads.times do |i|
-    start = i * chunk_size
-    finish = (i == num_threads - 1) ? max_number : (i + 1) * chunk_size
-    
     threads << Thread.new do
-      results[i] = count_primes_in_range(start, finish)
+      results[i] = count_primes_for_duration(duration)
     end
   end
   
   threads.each(&:join)
   
   total_primes = results.sum
-  end_time = Time.now
-  elapsed_time = end_time - start_time
+  actual_time = Time.now - start_time
+  primes_per_sec = (total_primes / actual_time).to_i
   
   {
     language: 'Ruby',
     threads: num_threads,
-    max_number: max_number,
+    duration_seconds: duration,
+    actual_time_seconds: actual_time,
     primes_found: total_primes,
-    time_seconds: elapsed_time
+    primes_per_second: primes_per_sec
   }
 end
 
 # Main execution
 num_threads = ARGV[0] ? ARGV[0].to_i : 4
-max_number = ARGV[1] ? ARGV[1].to_i : 100000
+duration = ARGV[1] ? ARGV[1].to_f : 1.0
 
-result = benchmark(num_threads, max_number)
+result = benchmark(num_threads, duration)
 puts JSON.pretty_generate(result)

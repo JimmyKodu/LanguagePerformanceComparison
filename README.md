@@ -25,10 +25,15 @@ This project provides a standardized benchmark to measure and compare the comput
 
 ## Benchmark Task
 
-The benchmark calculates prime numbers up to a specified limit (default: 100,000) by:
-1. Dividing the range into equal chunks
-2. Processing each chunk in parallel (when multithreading is available)
-3. Aggregating results and measuring execution time
+The benchmark measures computational throughput by continuously calculating prime numbers for a fixed duration (default: 1 second):
+1. Each thread continuously finds prime numbers starting from 2
+2. All threads run in parallel for the specified duration
+3. Results report total primes found and primes per second (throughput)
+
+This duration-based approach ensures meaningful comparison by:
+- Running each language for the same amount of time (~1 second)
+- Measuring actual computational throughput (primes/second)
+- Avoiding the issue of very short execution times that make comparison difficult
 
 ## Requirements
 
@@ -69,17 +74,20 @@ chmod +x run_benchmarks.sh analyze_results.py
 
 ### Running Benchmarks
 
-Run all available benchmarks with default settings (4 threads, 100,000 max number):
+Run all available benchmarks with default settings (4 threads, 1 second duration):
 ```bash
 ./run_benchmarks.sh
 ```
 
-Run with custom thread count and range:
+Run with custom thread count and duration:
 ```bash
-./run_benchmarks.sh <threads> <max_number>
+./run_benchmarks.sh <threads> <duration_seconds>
 
-# Example: Use 8 threads and calculate primes up to 200,000
-./run_benchmarks.sh 8 200000
+# Example: Use 8 threads and run for 2 seconds
+./run_benchmarks.sh 8 2.0
+
+# Example: Use 2 threads and run for 0.5 seconds  
+./run_benchmarks.sh 2 0.5
 ```
 
 ### Validating Implementations
@@ -99,8 +107,8 @@ After running benchmarks, analyze and compare the results:
 ```
 
 The analysis tool will display:
-- Comparison table sorted by execution time
-- Statistical analysis (fastest, slowest, average times)
+- Comparison table sorted by throughput (primes per second)
+- Statistical analysis (fastest, slowest, average throughput)
 - Multithreading analysis for each language
 
 ### Results
@@ -116,35 +124,36 @@ Each result file contains:
 {
   "language": "Language Name",
   "threads": 4,
-  "max_number": 100000,
-  "primes_found": 9592,
-  "time_seconds": 1.234567
+  "duration_seconds": 1.0,
+  "actual_time_seconds": 1.002345,
+  "primes_found": 1223039,
+  "primes_per_second": 1220598
 }
 ```
 
 ## Example Output
 
 ```
-================================================================================
+====================================================================================================
 BENCHMARK RESULTS COMPARISON
-================================================================================
+====================================================================================================
 
 Test Configuration:
-  Max Number: 100000
+  Duration: 1.0s
 
-Language        Threads    Primes Found    Time (s)     Speed
---------------------------------------------------------------------------------
-C++             4          9592            0.123456     1.00x (fastest)
-C               4          9592            0.145678     0.85x
-Go              4          9592            0.167890     0.73x
-Java            4          9592            0.234567     0.53x
-C#              4          9592            0.289012     0.43x
-JavaScript      4          9592            0.345678     0.36x
-TypeScript      4          9592            0.367890     0.34x
-Ruby            4          9592            0.456789     0.27x
-Python          4          9592            0.567890     0.22x
-PHP             1          9592            1.234567     0.10x
---------------------------------------------------------------------------------
+Language        Threads    Primes Found    Primes/sec      Performance
+----------------------------------------------------------------------------------------------------
+C               4          1224786         1223925         1.00x (fastest)
+C++             4          1223317         1222782         1.00x
+C#              4          1213296         1209054         0.99x
+Java            4          1212854         1207860         0.99x
+JavaScript      4          1217082         1170271         0.96x
+TypeScript      4          1216515         1167480         0.95x
+Go              4          1099974         1099654         0.90x
+Python          4          102779          98154           0.08x
+Ruby            4          86148           66195           0.05x
+PHP             1          51636           51577           0.04x
+----------------------------------------------------------------------------------------------------
 ```
 
 ## Project Structure
@@ -183,10 +192,15 @@ All implementations use the same prime-checking algorithm for fair comparison:
 
 ### Fairness Considerations
 - Same algorithm across all languages
-- Same computational task (prime number calculation)
-- Consistent input parameters
+- Same computational task (prime number calculation)  
+- Fixed duration (1 second by default) ensures meaningful execution time
+- Results based on throughput (primes/second) for clear comparison
 - No language-specific optimizations
-- Results include actual prime count for verification
+- Results include actual execution time for verification
+- Fixed duration (1 second by default) ensures meaningful execution time
+- Results based on throughput (primes/second) for clear comparison
+- No language-specific optimizations
+- Results include actual execution time for verification
 
 ### Limitations
 - Python's Global Interpreter Lock (GIL) limits true parallel execution
@@ -194,6 +208,7 @@ All implementations use the same prime-checking algorithm for fair comparison:
 - Performance depends on system resources and current load
 - Compiled languages have an inherent advantage over interpreted ones
 - Results may vary between runs and systems
+- Very short durations (<0.5s) may show startup overhead effects
 
 ## Contributing
 

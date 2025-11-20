@@ -11,23 +11,34 @@ function isPrime(n: number): boolean {
     return true;
 }
 
-function countPrimesInRange(start: number, end: number): number {
+function countPrimesForDuration(duration: number): number {
     let count = 0;
-    for (let num = start; num < end; num++) {
+    let num = 2;
+    const startTime = Date.now();
+    
+    while (true) {
         if (isPrime(num)) {
             count++;
         }
+        num++;
+        
+        // Check time periodically (every 1000 numbers to reduce overhead)
+        if (num % 1000 === 0) {
+            if ((Date.now() - startTime) / 1000 >= duration) {
+                break;
+            }
+        }
     }
+    
     return count;
 }
 
 interface WorkerData {
-    start: number;
-    end: number;
+    duration: number;
 }
 
-const { start, end } = workerData as WorkerData;
-const count = countPrimesInRange(start, end);
+const { duration } = workerData as WorkerData;
+const count = countPrimesForDuration(duration);
 if (parentPort) {
     parentPort.postMessage(count);
 }

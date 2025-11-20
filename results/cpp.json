@@ -1,7 +1,8 @@
 {
   "language": "C++",
-  "threads": 2,
-  "max_number": 20000,
-  "primes_found": 2262,
-  "time_seconds": 0.000313867
+  "threads": 4,
+  "duration_seconds": 1,
+  "actual_time_seconds": 1.00044,
+  "primes_found": 1223317,
+  "primes_per_second": 1222782
 }

@@ -15,36 +15,49 @@ function is_prime($n) {
     return true;
 }
 
-function count_primes($max_number) {
+function count_primes_for_duration($duration) {
     $count = 0;
-    for ($num = 0; $num < $max_number; $num++) {
+    $num = 2;
+    $start_time = microtime(true);
+    
+    while (true) {
         if (is_prime($num)) {
             $count++;
         }
+        $num++;
+        
+        // Check time periodically (every 1000 numbers to reduce overhead)
+        if ($num % 1000 == 0) {
+            if (microtime(true) - $start_time >= $duration) {
+                break;
+            }
+        }
     }
+    
     return $count;
 }
 
-function run_benchmark($max_number = 100000) {
+function run_benchmark($duration = 1.0) {
     $start_time = microtime(true);
     
-    $total_primes = count_primes($max_number);
+    $total_primes = count_primes_for_duration($duration);
     
-    $end_time = microtime(true);
-    $elapsed = $end_time - $start_time;
+    $actual_time = microtime(true) - $start_time;
+    $primes_per_sec = (int)($total_primes / $actual_time);
     
     return [
         'language' => 'PHP',
         'threads' => 1,  // PHP is single-threaded
-        'max_number' => $max_number,
+        'duration_seconds' => $duration,
+        'actual_time_seconds' => $actual_time,
         'primes_found' => $total_primes,
-        'time_seconds' => $elapsed
+        'primes_per_second' => $primes_per_sec
     ];
 }
 
 // Main execution
-$max_number = isset($argv[2]) ? (int)$argv[2] : 100000;
+$duration = isset($argv[2]) ? (float)$argv[2] : 1.0;
 
-$result = run_benchmark($max_number);
+$result = run_benchmark($duration);
 echo json_encode($result, JSON_PRETTY_PRINT) . "\n";
 ?>

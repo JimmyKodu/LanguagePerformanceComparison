@@ -1,7 +1,8 @@
 {
   "language": "Go",
-  "threads": 2,
-  "max_number": 20000,
-  "primes_found": 2262,
-  "time_seconds": 0.000373027
+  "threads": 4,
+  "duration_seconds": 1,
+  "actual_time_seconds": 1.000290462,
+  "primes_found": 1099974,
+  "primes_per_second": 1099654
 }

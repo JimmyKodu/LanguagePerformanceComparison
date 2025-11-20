@@ -11,13 +11,13 @@ RESULTS_DIR="$SCRIPT_DIR/results"
 
 # Default parameters
 THREADS=${1:-4}
-MAX_NUMBER=${2:-100000}
+DURATION=${2:-1.0}
 
 echo "======================================"
 echo "Language Performance Comparison"
 echo "======================================"
 echo "Threads: $THREADS"
-echo "Max Number: $MAX_NUMBER"
+echo "Duration: ${DURATION}s"
 echo "======================================"
 echo ""
 
@@ -27,7 +27,7 @@ mkdir -p "$RESULTS_DIR"
 # Python
 echo "Running Python benchmark..."
 if command -v python3 &> /dev/null; then
-    python3 "$BENCHMARK_DIR/python/benchmark.py" "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/python.json"
+    python3 "$BENCHMARK_DIR/python/benchmark.py" "$THREADS" "$DURATION" | tee "$RESULTS_DIR/python.json"
     echo ""
 else
     echo "Python3 not found, skipping..."
@@ -39,7 +39,7 @@ echo "Running Go benchmark..."
 if command -v go &> /dev/null; then
     cd "$BENCHMARK_DIR/go"
     go build -o benchmark benchmark.go
-    ./benchmark "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/go.json"
+    ./benchmark "$THREADS" "$DURATION" | tee "$RESULTS_DIR/go.json"
     rm -f benchmark
     cd "$SCRIPT_DIR"
     echo ""
@@ -54,8 +54,8 @@ if command -v javac &> /dev/null && command -v java &> /dev/null; then
     cd "$BENCHMARK_DIR/java"
     # Try to compile with Gson if available, otherwise use simple version
     if javac -cp ".:*" Benchmark.java 2>/dev/null || javac Benchmark.java 2>/dev/null; then
-        java -cp ".:*" Benchmark "$THREADS" "$MAX_NUMBER" 2>/dev/null | tee "$RESULTS_DIR/java.json" || \
-        java Benchmark "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/java.json"
+        java -cp ".:*" Benchmark "$THREADS" "$DURATION" 2>/dev/null | tee "$RESULTS_DIR/java.json" || \
+        java Benchmark "$THREADS" "$DURATION" | tee "$RESULTS_DIR/java.json"
         rm -f Benchmark.class PrimeCounter.class BenchmarkResult.class
     fi
     cd "$SCRIPT_DIR"
@@ -70,7 +70,7 @@ echo "Running C benchmark..."
 if command -v gcc &> /dev/null; then
     cd "$BENCHMARK_DIR/c"
     gcc -o benchmark benchmark.c -pthread -lm -O2
-    ./benchmark "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/c.json"
+    ./benchmark "$THREADS" "$DURATION" | tee "$RESULTS_DIR/c.json"
     rm -f benchmark
     cd "$SCRIPT_DIR"
     echo ""
@@ -84,7 +84,7 @@ echo "Running C++ benchmark..."
 if command -v g++ &> /dev/null; then
     cd "$BENCHMARK_DIR/cpp"
     g++ -o benchmark benchmark.cpp -pthread -O2 -std=c++11
-    ./benchmark "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/cpp.json"
+    ./benchmark "$THREADS" "$DURATION" | tee "$RESULTS_DIR/cpp.json"
     rm -f benchmark
     cd "$SCRIPT_DIR"
     echo ""
@@ -98,8 +98,8 @@ echo "Running C# benchmark..."
 if command -v dotnet &> /dev/null; then
     cd "$BENCHMARK_DIR/csharp/Benchmark"
     if [ -f "Benchmark.csproj" ]; then
-        dotnet run -c Release --no-build -- "$THREADS" "$MAX_NUMBER" 2>/dev/null | tee "$RESULTS_DIR/csharp.json" || \
-        dotnet run -c Release -- "$THREADS" "$MAX_NUMBER" 2>/dev/null | tee "$RESULTS_DIR/csharp.json"
+        dotnet run -c Release --no-build -- "$THREADS" "$DURATION" 2>/dev/null | tee "$RESULTS_DIR/csharp.json" || \
+        dotnet run -c Release -- "$THREADS" "$DURATION" 2>/dev/null | tee "$RESULTS_DIR/csharp.json"
     fi
     cd "$SCRIPT_DIR"
     echo ""
@@ -111,7 +111,7 @@ fi
 # PHP
 echo "Running PHP benchmark..."
 if command -v php &> /dev/null; then
-    php "$BENCHMARK_DIR/php/benchmark.php" "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/php.json"
+    php "$BENCHMARK_DIR/php/benchmark.php" "$THREADS" "$DURATION" | tee "$RESULTS_DIR/php.json"
     echo ""
 else
     echo "PHP not found, skipping..."
@@ -121,7 +121,7 @@ fi
 # Ruby
 echo "Running Ruby benchmark..."
 if command -v ruby &> /dev/null; then
-    ruby "$BENCHMARK_DIR/ruby/benchmark.rb" "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/ruby.json"
+    ruby "$BENCHMARK_DIR/ruby/benchmark.rb" "$THREADS" "$DURATION" | tee "$RESULTS_DIR/ruby.json"
     echo ""
 else
     echo "Ruby not found, skipping..."
@@ -131,7 +131,7 @@ fi
 # JavaScript (Node.js)
 echo "Running JavaScript benchmark..."
 if command -v node &> /dev/null; then
-    node "$BENCHMARK_DIR/javascript/benchmark.js" "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/javascript.json"
+    node "$BENCHMARK_DIR/javascript/benchmark.js" "$THREADS" "$DURATION" | tee "$RESULTS_DIR/javascript.json"
     echo ""
 else
     echo "Node.js not found, skipping..."
@@ -141,12 +141,12 @@ fi
 # TypeScript
 echo "Running TypeScript benchmark..."
 if command -v ts-node &> /dev/null; then
-    ts-node "$BENCHMARK_DIR/typescript/benchmark.ts" "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/typescript.json"
+    ts-node "$BENCHMARK_DIR/typescript/benchmark.ts" "$THREADS" "$DURATION" | tee "$RESULTS_DIR/typescript.json"
     echo ""
 elif command -v node &> /dev/null && command -v tsc &> /dev/null; then
     cd "$BENCHMARK_DIR/typescript"
     tsc benchmark.ts worker.ts
-    node benchmark.js "$THREADS" "$MAX_NUMBER" | tee "$RESULTS_DIR/typescript.json"
+    node benchmark.js "$THREADS" "$DURATION" | tee "$RESULTS_DIR/typescript.json"
     rm -f benchmark.js worker.js
     cd "$SCRIPT_DIR"
     echo ""

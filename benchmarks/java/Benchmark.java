@@ -1,33 +1,34 @@
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 class BenchmarkResult {
     String language;
     int threads;
-    int max_number;
-    int primes_found;
-    double time_seconds;
+    double duration_seconds;
+    double actual_time_seconds;
+    long primes_found;
+    long primes_per_second;
 
-    public BenchmarkResult(String language, int threads, int maxNumber, int primesFound, double timeSeconds) {
+    public BenchmarkResult(String language, int threads, double durationSeconds, double actualTimeSeconds, long primesFound, long primesPerSecond) {
         this.language = language;
         this.threads = threads;
-        this.max_number = maxNumber;
+        this.duration_seconds = durationSeconds;
+        this.actual_time_seconds = actualTimeSeconds;
         this.primes_found = primesFound;
-        this.time_seconds = timeSeconds;
+        this.primes_per_second = primesPerSecond;
     }
 
     public String toJson() {
-        return String.format("{\n  \"language\": \"%s\",\n  \"threads\": %d,\n  \"max_number\": %d,\n  \"primes_found\": %d,\n  \"time_seconds\": %.6f\n}",
-            language, threads, max_number, primes_found, time_seconds);
+        return String.format("{\n  \"language\": \"%s\",\n  \"threads\": %d,\n  \"duration_seconds\": %.1f,\n  \"actual_time_seconds\": %.6f,\n  \"primes_found\": %d,\n  \"primes_per_second\": %d\n}",
+            language, threads, duration_seconds, actual_time_seconds, primes_found, primes_per_second);
     }
 }
 
-class PrimeCounter implements Callable<Integer> {
-    private final int start;
-    private final int end;
+class PrimeCounter implements Callable<Long> {
+    private final double duration;
 
-    public PrimeCounter(int start, int end) {
-        this.start = start;
-        this.end = end;
+    public PrimeCounter(double duration) {
+        this.duration = duration;
     }
 
     private boolean isPrime(int n) {
@@ -42,49 +43,60 @@ class PrimeCounter implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() {
-        int count = 0;
-        for (int num = start; num < end; num++) {
+    public Long call() {
+        long count = 0;
+        int num = 2;
+        long startTime = System.nanoTime();
+        
+        while (true) {
             if (isPrime(num)) {
                 count++;
             }
+            num++;
+            
+            // Check time periodically (every 1000 numbers to reduce overhead)
+            if (num % 1000 == 0) {
+                double elapsed = (System.nanoTime() - startTime) / 1_000_000_000.0;
+                if (elapsed >= duration) {
+                    break;
+                }
+            }
         }
+        
         return count;
     }
 }
 
 public class Benchmark {
-    public static BenchmarkResult runBenchmark(int numThreads, int maxNumber) throws InterruptedException, ExecutionException {
+    public static BenchmarkResult runBenchmark(int numThreads, double duration) throws InterruptedException, ExecutionException {
         long startTime = System.nanoTime();
 
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        int chunkSize = maxNumber / numThreads;
-        Future<Integer>[] futures = new Future[numThreads];
+        Future<Long>[] futures = new Future[numThreads];
 
         for (int i = 0; i < numThreads; i++) {
-            int start = i * chunkSize;
-            int end = (i == numThreads - 1) ? maxNumber : (i + 1) * chunkSize;
-            futures[i] = executor.submit(new PrimeCounter(start, end));
+            futures[i] = executor.submit(new PrimeCounter(duration));
         }
 
-        int totalPrimes = 0;
-        for (Future<Integer> future : futures) {
+        long totalPrimes = 0;
+        for (Future<Long> future : futures) {
             totalPrimes += future.get();
         }
 
         executor.shutdown();
         long endTime = System.nanoTime();
-        double elapsedSeconds = (endTime - startTime) / 1_000_000_000.0;
+        double actualSeconds = (endTime - startTime) / 1_000_000_000.0;
+        long primesPerSecond = (long)(totalPrimes / actualSeconds);
 
-        return new BenchmarkResult("Java", numThreads, maxNumber, totalPrimes, elapsedSeconds);
+        return new BenchmarkResult("Java", numThreads, duration, actualSeconds, totalPrimes, primesPerSecond);
     }
 
     public static void main(String[] args) {
         int numThreads = args.length > 0 ? Integer.parseInt(args[0]) : 4;
-        int maxNumber = args.length > 1 ? Integer.parseInt(args[1]) : 100000;
+        double duration = args.length > 1 ? Double.parseDouble(args[1]) : 1.0;
 
         try {
-            BenchmarkResult result = runBenchmark(numThreads, maxNumber);
+            BenchmarkResult result = runBenchmark(numThreads, duration);
             System.out.println(result.toJson());
         } catch (Exception e) {
             e.printStackTrace();

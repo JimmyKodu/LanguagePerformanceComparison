@@ -4,11 +4,11 @@
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 
 typedef struct {
-    int start;
-    int end;
-    int count;
+    double duration;
+    atomic_long* total_count;
 } ThreadData;
 
 bool is_prime(int n) {
@@ -22,51 +22,70 @@ bool is_prime(int n) {
     return true;
 }
 
-void* count_primes_in_range(void* arg) {
+void* count_primes_for_duration(void* arg) {
     ThreadData* data = (ThreadData*)arg;
-    data->count = 0;
-    for (int num = data->start; num < data->end; num++) {
+    long count = 0;
+    int num = 2;
+    
+    struct timespec start_time, current_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    
+    while (1) {
         if (is_prime(num)) {
-            data->count++;
+            count++;
+        }
+        num++;
+        
+        // Check time periodically (every 1000 numbers to reduce overhead)
+        if (num % 1000 == 0) {
+            clock_gettime(CLOCK_MONOTONIC, &current_time);
+            double elapsed = (current_time.tv_sec - start_time.tv_sec) + 
+                           (current_time.tv_nsec - start_time.tv_nsec) / 1e9;
+            if (elapsed >= data->duration) {
+                break;
+            }
         }
     }
+    
+    atomic_fetch_add(data->total_count, count);
     return NULL;
 }
 
 int main(int argc, char* argv[]) {
     int num_threads = argc > 1 ? atoi(argv[1]) : 4;
-    int max_number = argc > 2 ? atoi(argv[2]) : 100000;
+    double duration = argc > 2 ? atof(argv[2]) : 1.0;
 
     struct timespec start_time, end_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
     pthread_t* threads = malloc(num_threads * sizeof(pthread_t));
     ThreadData* thread_data = malloc(num_threads * sizeof(ThreadData));
-
-    int chunk_size = max_number / num_threads;
+    atomic_long total_primes = 0;
 
     for (int i = 0; i < num_threads; i++) {
-        thread_data[i].start = i * chunk_size;
-        thread_data[i].end = (i == num_threads - 1) ? max_number : (i + 1) * chunk_size;
-        pthread_create(&threads[i], NULL, count_primes_in_range, &thread_data[i]);
+        thread_data[i].duration = duration;
+        thread_data[i].total_count = &total_primes;
+        pthread_create(&threads[i], NULL, count_primes_for_duration, &thread_data[i]);
     }
 
-    int total_primes = 0;
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
-        total_primes += thread_data[i].count;
     }
 
     clock_gettime(CLOCK_MONOTONIC, &end_time);
-    double elapsed = (end_time.tv_sec - start_time.tv_sec) + 
-                     (end_time.tv_nsec - start_time.tv_nsec) / 1e9;
+    double actual_time = (end_time.tv_sec - start_time.tv_sec) + 
+                        (end_time.tv_nsec - start_time.tv_nsec) / 1e9;
+
+    long primes = atomic_load(&total_primes);
+    long primes_per_sec = (long)(primes / actual_time);
 
     printf("{\n");
     printf("  \"language\": \"C\",\n");
     printf("  \"threads\": %d,\n", num_threads);
-    printf("  \"max_number\": %d,\n", max_number);
-    printf("  \"primes_found\": %d,\n", total_primes);
-    printf("  \"time_seconds\": %.6f\n", elapsed);
+    printf("  \"duration_seconds\": %.1f,\n", duration);
+    printf("  \"actual_time_seconds\": %.6f,\n", actual_time);
+    printf("  \"primes_found\": %ld,\n", primes);
+    printf("  \"primes_per_second\": %ld\n", primes_per_sec);
     printf("}\n");
 
     free(threads);
