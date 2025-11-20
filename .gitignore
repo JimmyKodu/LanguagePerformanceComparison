@@ -40,3 +40,5 @@ obj/
 # OS files
 Thumbs.db
 results/
+_codeql_detected_source_root
+root/
