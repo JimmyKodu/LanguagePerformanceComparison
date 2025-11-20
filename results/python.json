@@ -1,0 +1,8 @@
+{
+  "language": "Python",
+  "threads": 4,
+  "duration_seconds": 1.0,
+  "actual_time_seconds": 1.0471127033233643,
+  "primes_found": 102779,
+  "primes_per_second": 98154
+}

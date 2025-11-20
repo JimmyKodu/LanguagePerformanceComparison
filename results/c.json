@@ -1,0 +1,8 @@
+{
+  "language": "C",
+  "threads": 4,
+  "duration_seconds": 1.0,
+  "actual_time_seconds": 1.000703,
+  "primes_found": 1224786,
+  "primes_per_second": 1223925
+}

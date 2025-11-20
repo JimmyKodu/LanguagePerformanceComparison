@@ -1,0 +1,8 @@
+{
+  "language": "TypeScript",
+  "threads": 4,
+  "duration_seconds": 1,
+  "actual_time_seconds": 1.042,
+  "primes_found": 1216515,
+  "primes_per_second": 1167480
+}

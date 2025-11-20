@@ -1,0 +1,8 @@
+{
+    "language": "PHP",
+    "threads": 1,
+    "duration_seconds": 1,
+    "actual_time_seconds": 1.0011329650878906,
+    "primes_found": 51636,
+    "primes_per_second": 51577
+}

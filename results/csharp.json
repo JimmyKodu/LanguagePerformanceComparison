@@ -1,0 +1,8 @@
+{
+  "language": "C#",
+  "threads": 4,
+  "duration_seconds": 1,
+  "actual_time_seconds": 1.0035077,
+  "primes_found": 1213296,
+  "primes_per_second": 1209054
+}

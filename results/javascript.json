@@ -1,0 +1,8 @@
+{
+  "language": "JavaScript",
+  "threads": 4,
+  "duration_seconds": 1,
+  "actual_time_seconds": 1.04,
+  "primes_found": 1217082,
+  "primes_per_second": 1170271
+}

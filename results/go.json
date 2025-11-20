@@ -1,0 +1,8 @@
+{
+  "language": "Go",
+  "threads": 4,
+  "duration_seconds": 1,
+  "actual_time_seconds": 1.000290462,
+  "primes_found": 1099974,
+  "primes_per_second": 1099654
+}

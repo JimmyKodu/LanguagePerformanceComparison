@@ -1,0 +1,8 @@
+{
+  "language": "Ruby",
+  "threads": 4,
+  "duration_seconds": 1.0,
+  "actual_time_seconds": 1.301418995,
+  "primes_found": 86148,
+  "primes_per_second": 66195
+}
