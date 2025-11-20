@@ -1,0 +1,42 @@
+# Compiled binaries and executables
+*.o
+*.out
+*.exe
+*.dll
+*.class
+benchmark
+Benchmark
+
+# Language-specific
+__pycache__/
+*.pyc
+*.pyo
+node_modules/
+package-lock.json
+package.json
+*.js.map
+go.mod
+go.sum
+
+# .NET / C#
+bin/
+obj/
+*.csproj
+*.user
+*.suo
+*.cache
+
+# Results (optional - you might want to keep these)
+# results/*.json
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS files
+Thumbs.db
+results/
